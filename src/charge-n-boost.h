@@ -12,10 +12,15 @@
 
 #define CCPIN                             A0
 #define BTNPIN                            3
-#define LEDFETPIN                         A2
+#define INT_INACT_INTBQ_PIN               2
+#define BOOST_EN_PIN                      5
+#define BOOST_HIV_PIN                     6
+#define ILIM_PIN                          A3
+#define BOOST_CURRENT_PIN                 A6
 
-#define BQ25895_ADDRESS                   0x6a
+#define BQ25895_ADDRESS                   0x6a // 7 bits address
 #define MAX17043_ADDRESS                  0x36
+#define LC709203F_ADDRESS                 0x0b 
 
 #define BQ25895_REG_INP_LIM               0x00
 #define BQ25895_REG_ADC_DATALINE_CONFIG   0x02
@@ -32,6 +37,11 @@
 #define MAX17043_REG_SOC                  0x04
 #define MAX17043_REG_MODE                 0x06
 #define MAX17043_REG_CONFIG               0x0d
+
+#define LC709203F_REG_1PC_SOC             0x0d
+#define LC709203F_REG_TEMP_METHOD         0x16
+#define LC709203F_REG_VCELL               0x09
+#define LC709203F_REG_APA                 0x0b
 
 class Powerbank  {
   
