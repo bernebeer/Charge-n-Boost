@@ -1,50 +1,73 @@
 #include "Powerbank.h"
 #include <Wire.h>
+#include <FastLED.h>
 
-#define MAX_INPUT_CURRENT       3000
+#define MAX_INPUT_CURRENT       2000
 #define MAX_FASTCHARGE_CURRENT  2000
+#define NUM_LEDS                3
+#define DATA_PIN                9
 
 // Instantiate Powerbank object, name it anything, in this case 'mypb'
 Powerbank mypb;
 
+CRGB leds[NUM_LEDS];
+
 unsigned long previousMillis = 0;
+unsigned long previousBrightnessMillis = 0;
+unsigned long previousRunningMillis = 0;
+boolean ledDirection = 1;
+int brightness = 0;
+unsigned long timestampIsActive = 0;
 
 void setup() {
   
   Serial.begin(115200);
-
-  // Initialise powerbank: full reset, set fastcharge current limit and input current limit, 
+  
   mypb.init(MAX_FASTCHARGE_CURRENT, MAX_INPUT_CURRENT);
+
+  FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
+
+  mypb.enableBoost( true );
+
+  Serial.println("Reset!");
   
-  pinMode(LEDFETPIN, OUTPUT);
-  
-}
+} // End setup
 
 void loop() {
 
-  // Check powerbank every second, remember to reset powerbank watchdog timer
-  unsigned long currentMillis = millis();
-  if ( currentMillis - previousMillis >= 1000 ) {
+  switch( map( mypb.getBatteryLevel(), 0, 100, 1, 4 )  ) {
 
-    // Reset BQ25895 watchdog timer, prevents BQ25895 register reset to default, needed every 40 seconds if BQ25895 did not receive an I2c write
+    case 1:
+      pulseLeds( 100, 0, 0, 3 );
+      break;
+    case 2:
+      pulseLeds( 0, 0, 100, 3 );
+      break;
+    case 3:
+      pulseLeds( 0, 100, 0, 3 );
+      break;
+    default:
+      pulseLeds( 100, 100, 100, 3 );
+      break;
+  }
+  
+  // Check powerbank every second
+  unsigned long currentMillis = millis();
+  if ( currentMillis - previousMillis >= 1000) {
+
+    // Reset BQ25895 watchdog timer, prevents BQ25895 register reset to default, needed at least every 40 seconds if BQ25895 did not receive an I2c write
     mypb.resetWatchdog();
 
     // Serial print powerbank data
+        // Get charge status ( 0 = Not charging, 1 = Pre-charge, 2 = Fast charging, 3 = Charge termination done )
+    Serial.print("Charge status: \t\t");
+    Serial.print( mypb.getChargeStatus() );
+    Serial.println("\t 0 = Not charging, 1 = Pre-charge, 2 = Fast charging, 3 = Charge termination done");
     
     // Get detected input USB type
     Serial.print("Vbus input type: \t");
     Serial.print( mypb.getVbusInputType() );
     Serial.println("\t 0 = No input, 2 = USB CDP (1.5A), 3 = USB DCP (3.25A), 4 = Adj. Hi-V. DCP (1.5A), 5 = Unk. Adap., 6 = Non Std. Adap.");
-
-    // Get input voltage
-    Serial.print("Vbus voltage: \t\t");
-    Serial.print( mypb.getVbusVoltage() );
-    Serial.println("mV");
-
-    // Get charge current
-    Serial.print("Charge current: \t");
-    Serial.print( mypb.getChargeCurrent() );
-    Serial.println("mA");
 
     // Get battery level
     Serial.print("Battery level: \t\t");
@@ -56,15 +79,39 @@ void loop() {
     Serial.print( mypb.getBatteryVoltage() );
     Serial.println("mV");
 
-    // Get output current
-    Serial.print("Output current: \t");
-    Serial.print( mypb.getOutputCurrent(), 0 );
-    Serial.println("mA");
+    // Get input voltage
+    Serial.print("Vbus voltage: \t\t");
+    Serial.print( mypb.getVbusVoltage() );
+    Serial.println("mV");
 
     // Get system voltage
     Serial.print("System voltage: \t");
     Serial.print( mypb.getSysVoltage() );
     Serial.println("mV");
+
+    if ( mypb.getBatteryVoltage() < 3200 ) {
+      mypb.sleepBtnWake();
+    }
+
+    // Get input current
+    Serial.print("Input current: \t\t");
+    Serial.print( mypb.getInputCurrent( 2 ), 0 );
+    Serial.println("mA");
+
+    // Get charge current
+    Serial.print("Charge current: \t");
+    Serial.print( mypb.getChargeCurrent() );
+    Serial.println("mA");
+
+    // Get output current
+    Serial.print("Output current: \t");
+    Serial.print( mypb.getOutputCurrent(), 0 );
+    Serial.println("mA");
+
+    // Get battery temperature
+    Serial.print("Battery temp: \t\t");
+    Serial.print( mypb.getBatteryTemp( 3435 ), 0);
+    Serial.println(" Celsius");
 
     // Check if battery mosfet is disabled
     Serial.print("Batfet disabled: \t");
@@ -75,19 +122,56 @@ void loop() {
       Serial.println("No");
     }
 
-    // Get charge status ( 0 = Not charging, 1 = Pre-charge, 2 = Fast charging, 3 = Charge termination done )
-    Serial.print("Charge status: \t\t");
-    Serial.print( mypb.getChargeStatus() );
-    Serial.println("\t 0 = Not charging, 1 = Pre-charge, 2 = Fast charging, 3 = Charge termination done");
-        
-    // Print empty line for readability
     Serial.println();
-    previousMillis = currentMillis;
-    
-  }
 
-  if ( mypb.btnPressed() ) {
-    mypb.sleepBtnWake();    
+    if( mypb.getOutputCurrent() > 1000 ) {
+      mypb.highVoltageMode( true );
+    }
+    else {
+      mypb.highVoltageMode( false );
+    }
+
+    if ( mypb.getOutputCurrent() > 50 || mypb.getChargeStatus() > 0 ) {
+      timestampIsActive = millis();
+    }
+
+    previousMillis = millis();
+    
+  }  
+
+  if ( millis() - timestampIsActive > 300000 ) {
+    mypb.sleepBtnWake();
   }
   
+} // End loop
+
+boolean pulseLeds( byte red, byte green, byte blue, int numberOfLeds ) {
+
+  for (int i = 0; i < NUM_LEDS; i++) {
+    leds[i] = CRGB::Black;
+  }
+  
+  for (int i = 0; i < numberOfLeds; i++) {
+    leds[i].setRGB( red, green, blue );
+  }
+
+  unsigned long currentBrightnessMillis = millis();
+  if ( currentBrightnessMillis - previousBrightnessMillis > 15 ) {
+    if ( ledDirection == 1 ) {
+      brightness++;
+      if ( brightness > 50 ) {
+        ledDirection = 0;
+      }
+    } else {
+      brightness--;
+      if ( brightness == 0 ) {
+        ledDirection = 1;
+      }
+    }
+    FastLED.setBrightness(brightness);
+    previousBrightnessMillis = millis();
+  }
+  
+  FastLED.show(); 
+                    
 }
