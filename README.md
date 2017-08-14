@@ -1,5 +1,7 @@
 # Charge 'n Boost library for Charge 'n Boost programmable powerbank board.
 
+use the following functions to control your Charge 'n Boost charger board.
+
     mypb.init( int fastChargeCurrent );
 
 **Description**
