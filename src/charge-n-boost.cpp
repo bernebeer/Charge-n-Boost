@@ -22,7 +22,14 @@ void Powerbank::init(unsigned int fast_chrg_current, unsigned int input_current)
 
   // Set pinmodes
   pinMode( BOOST_EN_PIN, OUTPUT );
+  pinMode( CHARGE_EN_PIN, OUTPUT );
   pinMode( BTNPIN, INPUT_PULLUP );
+  pinMode( SLIDE_POLE_4_PIN, INPUT_PULLUP );
+  pinMode( SLIDE_POLE_1_PIN, INPUT_PULLUP );
+  pinMode( LED_DATA_PIN, OUTPUT );
+  pinMode( LEDFET_PIN, OUTPUT );
+
+  digitalWrite( LEDFET_PIN, LOW );
 
   // Start I2c
   Wire.begin();
@@ -35,8 +42,8 @@ void Powerbank::init(unsigned int fast_chrg_current, unsigned int input_current)
   writeReg8(BQ25895_ADDRESS, BQ25895_REG_RESET, B10111001);
   // Init ADC, force D+ D- detection
   writeReg8(BQ25895_ADDRESS, BQ25895_REG_ADC_DATALINE_CONFIG, B11111101);
-  // Set minimum system voltage to 3.7v  
-  writeReg8(BQ25895_ADDRESS, BQ25895_REG_WD_CE_SYSVOLT_CONFIG, B01111110);
+  // Set minimum system voltage to 3.0V (SYS ADC and TS ADC conk out below this value), disable OTG
+  writeReg8(BQ25895_ADDRESS, BQ25895_REG_WD_CE_SYSVOLT_CONFIG, B11010000);
   // Disable enter ship mode delay
   writeReg8(BQ25895_ADDRESS, BQ25895_REG_BATFET_CONFIG, B01000000);
   // Disable stat pin (pad is exposed but unnecessary because of WS2812B's)
@@ -54,26 +61,35 @@ void Powerbank::init(unsigned int fast_chrg_current, unsigned int input_current)
   data = ( ( input_current / 50 ) - 2 );
   data = data | B01000000;
   writeReg8(BQ25895_ADDRESS, BQ25895_REG_INP_LIM, data);
+  // Set termination current limit to 512mA
+  writeReg8(BQ25895_ADDRESS, BQ25895_REG_PRE_TERM_LIM, B00011000);
 
-  // Initialise LC709203F as per datasheet instructions
+  // Initialise LC709203F as per datasheet start flow
   // Set to operational mode
   writeReg16(LC709203F_ADDRESS, LC709203F_REG_POWER, 0x0001);
-  // Set parasitic impedance
-  writeReg16(LC709203F_ADDRESS, LC709203F_REG_APA, 0x0001);
-  // Set battery profile
-  writeReg16(LC709203F_ADDRESS, LC709203F_REG_BAT_PROF, 0x0000);
+  // Set parasitic impedance, 200mOhms (rough estimation connector, cable and fuse resistance)
+  writeReg16(LC709203F_ADDRESS, LC709203F_REG_APA, 0x00C8);
+  // Set battery profile, Battery type 1 (3.7V; 4.2V), 
+  writeReg16(LC709203F_ADDRESS, LC709203F_REG_BAT_PROF, 0x0001);
   // Set initial RSOC
   writeReg16(LC709203F_ADDRESS, LC709203F_INIT_RSOC, 0xAA55);
   // Set temp obtaining method
   writeReg16(LC709203F_ADDRESS, LC709203F_REG_TEMP_METH, 0x0000);
-  // Set cell temperature (hardcoded to 25 degrees C atm, will have to update when taking TS measurements form BQ25895)
-  writeReg16(LC709203F_ADDRESS, LC709203F_REG_TEMP, 0x0BA6);  
+  // Set cell temperature
+  // Todo: hardcoded to 25 degrees C atm, will have to update when taking TS measurements form BQ25895
+  writeReg16(LC709203F_ADDRESS, LC709203F_REG_TEMP, 0x0BA6);
+
+  // Test CRC8 PROGMEM by doing a temperature write and reading it back, if it matches we know the write has been succesful
+  /*
+  writeReg16(LC709203F_ADDRESS, LC709203F_REG_TEMP, 0x0D03);
+  Serial.println( readReg16(LC709203F_ADDRESS, LC709203F_REG_TEMP), HEX);
+  */
   
 }
 
-// Function to reset charger ic watchdog, will need to be called every 40 seconds
+// Function to reset charger ic watchdog, will need to be called every 40 seconds; Update temp information fuel gauge
 void Powerbank::resetWatchdog() {
-  writeReg8(BQ25895_ADDRESS, BQ25895_REG_WD_CE_SYSVOLT_CONFIG, B01111110);
+  writeReg8(BQ25895_ADDRESS, BQ25895_REG_WD_CE_SYSVOLT_CONFIG, B11010000); 
 }
 
 // Function to enable boost converter ic
@@ -83,6 +99,16 @@ void Powerbank::enableBoost( boolean setting ) {
   }
   else {
     digitalWrite( BOOST_EN_PIN, LOW );
+  }
+}
+
+// Function to enable boost converter ic
+void Powerbank::enableCharge( boolean setting ) {
+  if ( setting == true ) {
+    digitalWrite( CHARGE_EN_PIN, LOW );
+  }
+  else {
+    digitalWrite( CHARGE_EN_PIN, HIGH );
   }
 }
 
@@ -96,10 +122,26 @@ void Powerbank::highVoltageMode( boolean setting ) {
   }
 }
 
+byte Powerbank::getSlidePosition() {
+  byte data = 0;
+  if ( digitalRead(SLIDE_POLE_4_PIN) == LOW && digitalRead(SLIDE_POLE_1_PIN) == HIGH )  {
+    data = 1;
+    return data;
+  }
+  else if ( digitalRead(SLIDE_POLE_4_PIN) == HIGH && digitalRead(SLIDE_POLE_1_PIN) == HIGH )  {
+    data = 2;
+    return data;
+  }
+  else {
+    data = 3;
+    return data;
+  }
+}
+
 // Function to retrieve input current, current flowing into device through vBus
 float Powerbank::getInputCurrent( byte slideSetting ) {
   // Iin = (KILIM x VILIM) / (RILIM x 0.8)
-  float data = 345.0 * (1100.0 / 1024.0 * analogRead(ILIMPIN))  /  ( 390.0 / slideSetting * 0.8 ) ;
+  float data = ( 350.0 * (1100.0 / 1024.0 * analogRead(ILIMPIN)) )  /  ( 390.0 / slideSetting * 0.8 ) ;
   return data;
 }
 
@@ -191,8 +233,12 @@ byte Powerbank::getVbusInputType() {
 // Function to sleep the powerbank and wake from button press, reduce current consumption to 45uA
 void Powerbank::sleepBtnWake() {
 
+  pinMode(LEDFET_PIN, INPUT);
+
+  delay(3000); 
+  
   // Disable batfet bq25895
-  writeReg8(BQ25895_ADDRESS, BQ25895_REG_BATFET_CONFIG, B01100000);
+  // writeReg8(BQ25895_ADDRESS, BQ25895_REG_BATFET_CONFIG, B01100000);
 
   // Disable battery monitor
   writeReg8(BQ25895_ADDRESS, BQ25895_REG_ADC_DATALINE_CONFIG, B00111101);
@@ -204,7 +250,7 @@ void Powerbank::sleepBtnWake() {
   writeReg16(LC709203F_ADDRESS , LC709203F_REG_POWER, 0x0002);
 
   // Disable boost
-  digitalWrite(BOOST_EN_PIN, LOW);
+  // digitalWrite(BOOST_EN_PIN, LOW);
 
   // disable ADC
   ADCSRA = 0;  
@@ -287,24 +333,34 @@ byte Powerbank::getBatteryLevel() {
   return lowByteData;
 }
 
-// Function to read battery temperature
-float Powerbank::getBatteryTemp( int betaValue ) {
+// Function to read battery temperature using thermistor in voltage divider
+// Todo: REGN voltage varies when Vbus is attached, 4.8V when not attached, 
+float Powerbank::getBatteryTemp( int betaValue, boolean outputCelsius ) {
   byte data = readReg8(BQ25895_ADDRESS, BQ25895_REG_ADC_TEMP);
-  float val = (data * 0.465) + 21.0; // Get ADC reading as a percentage of REGN voltage
+  float val = (data * 0.465) + 21.0; // Get BQ25895 ADC reading TS pin (expressed as a % of REGN voltage)
   
-  val = 4.0 * val / 100.0; // 4.0v regn voltage * percentage of REGN to get voltage
-  val = ( val * 5230.0 ) / ( 4.0 - val ); // Calculate total resistance of R2 voltage divider
-  val = ( 1.0 / ( (1.0 / val) - (1.0 / 30100.0) ) ); // Calculate thermistor resistance from 30100 ohm parallel resistor
+  val = 4.8 * val / 100.0; // Calculate voltage on TS pin (from ADC reading and REGN voltage)
+  val = ( val * 5230.0 ) / ( 4.8 - val ); // Calculate total resistance of R2 (from voltage TS pin and R1 5230ohm resistor)
+  val = ( 1.0 / ( (1.0 / val) - (1.0 / 30100.0) ) ); // Calculate NTC thermistor resistance (from total resistance R2 and 30100ohm parallel resistor)
 
-  // Steinhart calcs
+  // Calculate degrees Celsius from NTC thermistor resistance using Steinhart Hart
   val = val / 10000.0;
   val = log(val);
   val /= betaValue;
   val += 1.0 / (25.0 + 273.15);
   val = 1.0 / val;
-  val -= 273.15;
+  if (outputCelsius) {
+    val -= 273.15;
+  }
   
   return val;
+}
+
+int Powerbank::getIcoLimit() {
+  int data = 0;
+  data = readReg8(BQ25895_ADDRESS, BQ25895_REG_ICO_LIM);
+  data = (data & B00111111) * 50 + 100;
+  return data;
 }
 
 
@@ -316,13 +372,14 @@ void wake() {
 }
 
 // Function to look up CRC-8 CCITT error detecting code needed for LC709203F I2c error checking (see https://en.wikipedia.org/wiki/Cyclic_redundancy_check)
-// Function uses lookup table, todo: calculate CRC-8 CCITT code instead of using ram hungry lookup table
+// Todo: calculate CRC-8 CCITT code instead of using ram hungry lookup table
+// Done: Function now takes value from table in flash memory
 byte Powerbank::crc8ccitt(const void * data, size_t size) {
   byte val = 0;
   byte * pos = (byte *) data;
   byte * end = pos + size;
   while (pos < end) {
-    val = CRC_TABLE[val ^ *pos];
+    val = pgm_read_byte_near(CRC_TABLE + (val ^ *pos));
     pos++;
   }
   return val;

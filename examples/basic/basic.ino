@@ -2,10 +2,9 @@
 #include <Wire.h>
 #include <FastLED.h>
 
-#define MAX_INPUT_CURRENT       2000
+#define MAX_INPUT_CURRENT       3000
 #define MAX_FASTCHARGE_CURRENT  2000
 #define NUM_LEDS                3
-#define DATA_PIN                9
 
 // Instantiate Powerbank object, name it anything, in this case 'mypb'
 Powerbank mypb;
@@ -21,11 +20,11 @@ unsigned long timestampIsActive = 0;
 
 void setup() {
   
-  Serial.begin(115200);
+  Serial.begin(57600);
   
   mypb.init(MAX_FASTCHARGE_CURRENT, MAX_INPUT_CURRENT);
 
-  FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
+  FastLED.addLeds<NEOPIXEL, LED_DATA_PIN>(leds, NUM_LEDS);
 
   mypb.enableBoost( true );
 
@@ -34,6 +33,8 @@ void setup() {
 } // End setup
 
 void loop() {
+
+  digitalWrite( CHARGE_EN_PIN, LOW );
 
   switch( map( mypb.getBatteryLevel(), 0, 100, 1, 4 )  ) {
 
@@ -49,6 +50,7 @@ void loop() {
     default:
       pulseLeds( 100, 100, 100, 3 );
       break;
+      
   }
   
   // Check powerbank every second
@@ -89,13 +91,13 @@ void loop() {
     Serial.print( mypb.getSysVoltage() );
     Serial.println("mV");
 
-    if ( mypb.getBatteryVoltage() < 3200 ) {
+    if ( mypb.getBatteryVoltage() < 3000 ) {
       mypb.sleepBtnWake();
     }
 
     // Get input current
     Serial.print("Input current: \t\t");
-    Serial.print( mypb.getInputCurrent( 2 ), 0 );
+    Serial.print( mypb.getInputCurrent( 3 ), 0 );
     Serial.println("mA");
 
     // Get charge current
@@ -110,8 +112,13 @@ void loop() {
 
     // Get battery temperature
     Serial.print("Battery temp: \t\t");
-    Serial.print( mypb.getBatteryTemp( 3435 ), 0);
-    Serial.println(" Celsius");
+    Serial.print( mypb.getBatteryTemp( 3435, false ), 0);
+    Serial.println(" Kelvin");
+
+    // Get Input Current Optimizer Limit (ICO)
+    Serial.print("ICO: \t\t\t");
+    Serial.print( mypb.getIcoLimit() );
+    Serial.println(" mA");
 
     // Check if battery mosfet is disabled
     Serial.print("Batfet disabled: \t");
@@ -122,6 +129,10 @@ void loop() {
       Serial.println("No");
     }
 
+    // Check slide position
+    Serial.print("Slide position: \t");
+    Serial.println( mypb.getSlidePosition() );
+
     Serial.println();
 
     if( mypb.getOutputCurrent() > 1000 ) {
@@ -131,17 +142,21 @@ void loop() {
       mypb.highVoltageMode( false );
     }
 
-    if ( mypb.getOutputCurrent() > 50 || mypb.getChargeStatus() > 0 ) {
+    if ( mypb.getOutputCurrent() > 100 || mypb.getChargeStatus() > 0 ) {
       timestampIsActive = millis();
     }
+
+    Serial.print("Free RAM: ");
+    Serial.println(freeRam());
 
     previousMillis = millis();
     
   }  
-
-  if ( millis() - timestampIsActive > 300000 ) {
+  /*
+  if ( millis() - timestampIsActive > 5000 ) {
     mypb.sleepBtnWake();
   }
+  */
   
 } // End loop
 
@@ -156,10 +171,10 @@ boolean pulseLeds( byte red, byte green, byte blue, int numberOfLeds ) {
   }
 
   unsigned long currentBrightnessMillis = millis();
-  if ( currentBrightnessMillis - previousBrightnessMillis > 15 ) {
+  if ( currentBrightnessMillis - previousBrightnessMillis > 4 ) {
     if ( ledDirection == 1 ) {
       brightness++;
-      if ( brightness > 50 ) {
+      if ( brightness > 200 ) {
         ledDirection = 0;
       }
     } else {
@@ -174,4 +189,11 @@ boolean pulseLeds( byte red, byte green, byte blue, int numberOfLeds ) {
   
   FastLED.show(); 
                     
+}
+
+int freeRam () 
+{
+  extern int __heap_start, *__brkval; 
+  int v; 
+  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
 }
