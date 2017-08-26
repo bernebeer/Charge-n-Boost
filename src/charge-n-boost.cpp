@@ -64,7 +64,7 @@ void Powerbank::init(unsigned int fast_chrg_current, unsigned int input_current)
   // Set termination current limit to 512mA
   writeReg8(BQ25895_ADDRESS, BQ25895_REG_PRE_TERM_LIM, B00011000);
 
-  // Initialise LC709203F as per datasheet start flow
+  // Initialise LC709203F as per datasheet startup procedure
   // Set to operational mode
   writeReg16(LC709203F_ADDRESS, LC709203F_REG_POWER, 0x0001);
   // Set parasitic impedance, 200mOhms (rough estimation connector, cable and fuse resistance)
@@ -159,6 +159,7 @@ int Powerbank::getSysVoltage() {
 }
 
 // Function to retrieve voltage at charger input
+// Todo: return vbus voltage only when charger IC has accurate voltage readign
 int Powerbank::getVbusVoltage() {
   byte data = readReg8(BQ25895_ADDRESS, BQ25895_REG_ADC_VBUS_VOLT);
   int vbusVoltage = ( data & B01111111 ) * 100 + 2600;
@@ -230,15 +231,77 @@ byte Powerbank::getVbusInputType() {
   return data;
 }
 
+// Used by sleepTimeWake() to set sleep time
+void Powerbank::sleepTimerRoutine( int numberOfCycles, byte interval ) {
+
+  for ( int i = 0; i < numberOfCycles; i++ ) {
+    // disable ADC
+    ADCSRA = 0;
+    // clear various "reset" flags
+    MCUSR = 0;     
+    // allow changes, disable reset
+    WDTCSR = bit (WDCE) | bit (WDE);
+    // set interrupt mode and an interval 
+    WDTCSR = 0b01000000 | interval;
+    wdt_reset();  // pat the dog
+    
+    set_sleep_mode (SLEEP_MODE_PWR_DOWN);  
+    noInterrupts ();           // timed sequence follows
+    sleep_enable();
+   
+    // turn off brown-out enable in software
+    MCUCR = bit (BODS) | bit (BODSE);
+    MCUCR = bit (BODS); 
+    interrupts ();             // guarantees next instruction executed
+    sleep_cpu ();
+  }
+  
+}
+
+// Interrupt service routine when sleep timer expires
+ISR (WDT_vect) {
+   wdt_disable();  // disable watchdog
+}  // end of WDT_vect
+
+// Function to enable low power sleep for x amount of seconds
+void Powerbank::sleepTimeWake(int seconds) {
+  
+  // Disable batfet bq25895
+  writeReg8(BQ25895_ADDRESS, BQ25895_REG_BATFET_CONFIG, B01100000);
+
+  // Disable battery monitor
+  writeReg8(BQ25895_ADDRESS, BQ25895_REG_ADC_DATALINE_CONFIG, B00111101);
+
+  // BQ25895 to hiz
+  writeReg8(BQ25895_ADDRESS, BQ25895_REG_INP_LIM, B11001010);
+
+  // Set LC709203F to sleepmode
+  writeReg16(LC709203F_ADDRESS, LC709203F_REG_POWER, 0x0002);
+
+  unsigned int numberOf8sCycles = seconds / 8;
+  byte numberOf4sCycles = ( seconds - (8 * numberOf8sCycles)) / 4;
+  byte numberOf2sCycles = ( seconds - (8 * numberOf8sCycles) - (4 * numberOf4sCycles) ) / 2;
+  byte numberOf1sCycles = ( seconds - (8 * numberOf8sCycles) - (4 * numberOf4sCycles) - (2 * numberOf2sCycles) );
+
+  sleepTimerRoutine( numberOf8sCycles, 0b100001 );
+  sleepTimerRoutine( numberOf4sCycles, 0b100000 );
+  sleepTimerRoutine( numberOf2sCycles, 0b000111 );
+  sleepTimerRoutine( numberOf1sCycles, 0b000110 ); 
+    
+  // cancel sleep as a precaution
+  sleep_disable();
+
+  // Do an Atmega328 self reset after 15ms WDT timeout
+  wdt_enable(WDTO_15MS);
+  while(1) {};
+
+}
+
 // Function to sleep the powerbank and wake from button press, reduce current consumption to 45uA
 void Powerbank::sleepBtnWake() {
 
-  pinMode(LEDFET_PIN, INPUT);
-
-  delay(3000); 
-  
   // Disable batfet bq25895
-  // writeReg8(BQ25895_ADDRESS, BQ25895_REG_BATFET_CONFIG, B01100000);
+  writeReg8(BQ25895_ADDRESS, BQ25895_REG_BATFET_CONFIG, B01100000);
 
   // Disable battery monitor
   writeReg8(BQ25895_ADDRESS, BQ25895_REG_ADC_DATALINE_CONFIG, B00111101);
@@ -250,7 +313,7 @@ void Powerbank::sleepBtnWake() {
   writeReg16(LC709203F_ADDRESS , LC709203F_REG_POWER, 0x0002);
 
   // Disable boost
-  // digitalWrite(BOOST_EN_PIN, LOW);
+  digitalWrite(BOOST_EN_PIN, LOW);
 
   // disable ADC
   ADCSRA = 0;  
@@ -285,43 +348,6 @@ void Powerbank::sleepBtnWake() {
 
 // Function to sleep the powerbank but keep booster output enabled, higher current draw but able to wake on load detect (inact pin)
 void Powerbank::sleepInactWake() {
-
-  // BQ25895 set to hiz mode
-  writeReg8(BQ25895_ADDRESS, BQ25895_REG_INP_LIM, B11001010);
-
-  // Set LC709203F to sleepmode
-  writeReg16(LC709203F_ADDRESS , LC709203F_REG_POWER, 0x0002);
-
-  // Be sure to leave boost mode enabled for usb output load detection
-  digitalWrite(BOOST_EN_PIN, LOW);
-
-  // disable ADC
-  ADCSRA = 0;  
-
-  set_sleep_mode(SLEEP_MODE_PWR_DOWN);  
-  sleep_enable();  
-  noInterrupts ();  
-  attachInterrupt (INTERRUPT_ID_BQ25895, wake, FALLING);
-  EIFR = bit (INTF1);
-  EIFR = bit (INTF0);
-  
-  // Turn off brown-out enable in software
-  // BODS must be set to one and BODSE must be set to zero within four clock cycles
-  MCUCR = bit (BODS) | bit (BODSE);
-  // The BODS bit is automatically cleared after three clock cycles
-  MCUCR = bit (BODS); 
-
-  interrupts();
-  sleep_cpu();
-
-  ADCSRA = 135;
-
-  // Debounce delay
-  delay(500);
-
-  // Do an Atmega328 self reset after 15ms WDT timeout
-  wdt_enable(WDTO_15MS);
-  while(1) {};
   
 }
 
@@ -334,7 +360,7 @@ byte Powerbank::getBatteryLevel() {
 }
 
 // Function to read battery temperature using thermistor in voltage divider
-// Todo: REGN voltage varies when Vbus is attached, 4.8V when not attached, 
+// Todo: REGN voltage varies when Vbus is attached, 4.8V when not attached, ca. 6V when 9V attached
 float Powerbank::getBatteryTemp( int betaValue, boolean outputCelsius ) {
   byte data = readReg8(BQ25895_ADDRESS, BQ25895_REG_ADC_TEMP);
   float val = (data * 0.465) + 21.0; // Get BQ25895 ADC reading TS pin (expressed as a % of REGN voltage)
@@ -352,7 +378,6 @@ float Powerbank::getBatteryTemp( int betaValue, boolean outputCelsius ) {
   if (outputCelsius) {
     val -= 273.15;
   }
-  
   return val;
 }
 

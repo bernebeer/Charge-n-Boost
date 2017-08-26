@@ -69,6 +69,7 @@ class Powerbank  {
     byte          getVbusInputType();
     void          sleepBtnWake();
     void          sleepInactWake();
+    void          sleepTimeWake(int seconds);
     byte          getSlidePosition();
     void          highVoltageMode( boolean setting );
     void          enableBoost( boolean setting );
@@ -82,6 +83,7 @@ class Powerbank  {
     void          writeReg16(int deviceAddress, int regAddress, word data);
     void          writeReg8(int deviceAddress, int regAddress, byte data);
     byte          crc8ccitt(const void * data, size_t size);
+    void          sleepTimerRoutine( int numberOfCycles, byte interval );
 
 }; // End class in semi-colon...
 
