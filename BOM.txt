@@ -1,0 +1,87 @@
+
+Part Value                                Device                                   Package                                  Description                MPN           OC_FARNELL OC_NEWARK PACKAGE SUPPLIER
+C1   100nF                                C-EUC0603                                C0603                                    CAPACITOR, European symbol                                                    
+C2   22uF                                 C-EUC1206                                C1206                                    CAPACITOR, European symbol                                                    
+C3   100nF                                C-EUC0603                                C0603                                    CAPACITOR, European symbol                                                    
+C4   100nF                                C-EUC0603                                C0603                                    CAPACITOR, European symbol                                                    
+C5   100nF                                C-EUC0603                                C0603                                    CAPACITOR, European symbol                                                    
+C6   22uF                                 C-EUC1206                                C1206                                    CAPACITOR, European symbol                                                    
+C7   100nF                                C-EUC0603                                C0603                                    CAPACITOR, European symbol                                                    
+C8   100nF                                C-EUC0603                                C0603                                    CAPACITOR, European symbol                                                    
+C9   47nF                                 C-EUC0603                                C0603                                    CAPACITOR, European symbol                                                    
+C10  4.7uF                                C-EUC0805                                C0805                                    CAPACITOR, European symbol                                                    
+C11  22uF                                 C-EUC1206                                C1206                                    CAPACITOR, European symbol                                                    
+C12  22uF                                 C-EUC1206                                C1206                                    CAPACITOR, European symbol                                                    
+C13  22uF                                 C-EUC1206                                C1206                                    CAPACITOR, European symbol                                                    
+C14  100nF                                C-EUC0603                                C0603                                    CAPACITOR, European symbol                                                    
+C16  22uF                                 C-EUC1206                                C1206                                    CAPACITOR, European symbol                                                    
+C18  100nF                                C-EUC0603                                C0603                                    CAPACITOR, European symbol                                                    
+C19  100nF                                C-EUC0603                                C0603                                    CAPACITOR, European symbol                                                    
+C20  4.7uF                                C-EUC0805                                C0805                                    CAPACITOR, European symbol                                                    
+C21  4.7uF                                C-EUC0805                                C0805                                    CAPACITOR, European symbol                                                    
+C22  4.7uF                                C-EUC0805                                C0805                                    CAPACITOR, European symbol                                                    
+C23  100nF                                C-EUC0603                                C0603                                    CAPACITOR, European symbol                                                    
+C24  22uF                                 C-EUC1206                                C1206                                    CAPACITOR, European symbol                                                    
+C25  22uF                                 C-EUC1206                                C1206                                    CAPACITOR, European symbol                                                    
+C26  22uF                                 C-EUC1206                                C1206                                    CAPACITOR, European symbol                                                    
+C27  100nF                                C-EUC0603                                C0603                                    CAPACITOR, European symbol                                                    
+C28  100uF                                CAPACITOR_SMD_ALU_6.3MM                  CAPACITOR_6.3MM                                                                                                        
+C29  100nF                                C-EUC0603                                C0603                                    CAPACITOR, European symbol                                                    
+C30  100uF                                CAPACITOR_SMD_ALU_6.3MM                  CAPACITOR_6.3MM                                                                                                        
+D1   SCHOTTKY_SD2114S040S8R0_AVX_8A       SCHOTTKY_SD2114S040S8R0_AVX_8A           SCHOTTKY_SD2114S040S8R0_2114_AVX_8A                                                                                    
+F1                                        FUSE_MF-USML500_PTC_5A                   FUSE_MF-USML500_PTC_5A                                                                                                 
+ISP1 ISP_HEADER                           ISP_HEADER                               ISP_HEADER                                                                                                             
+J1   USB_MICRO-B_AMPHENOL_10118194-0001LF USB_MICRO-B_AMPHENOL_10118194-0001LF     USB_RECEPTACLE_10118194-0001LF_AMPHENOL                                                                                
+J2   SCL                                  PINHD-1X1                                1X01                                     PIN HEADER                                                                    
+J3   SDA                                  PINHD-1X1                                1X01                                     PIN HEADER                                                                    
+J4   BATTER_PAD_SOLDER_3X4MM              BATTER_PAD_SOLDER_3X4MM                  BATTERY_PAD_SOLDER                                                                                                     
+J5   BATTER_PAD_SOLDER_3X4MM              BATTER_PAD_SOLDER_3X4MM                  BATTERY_PAD_SOLDER                                                                                                     
+J6   DTR                                  PINHD-1X1                                1X01                                     PIN HEADER                                                                    
+J7   GND                                  PINHD-1X1                                1X01                                     PIN HEADER                                                                    
+J8   RX                                   PINHD-1X1                                1X01                                     PIN HEADER                                                                    
+J9   TX                                   PINHD-1X1                                1X01                                     PIN HEADER                                                                    
+J10  BATTERY_PAD_SOLDER_2.5X1.5MM         BATTERY_PAD_SOLDER_2.5X1.5MM             BATTERY_PAD_SOLDER_2.5X1.5MM                                                                                           
+J11  BATTERY_PAD_SOLDER_2.5X1.5MM         BATTERY_PAD_SOLDER_2.5X1.5MM             BATTERY_PAD_SOLDER_2.5X1.5MM                                                                                           
+J12  BAT_CONNECT                          TERMINAL_BLOCK_2WAY_KF301-5.0_POLARISED  TERMINAL_BLOCK_2WAY_KF301-5.0_POLARISED                                                                                
+J13  BTN                                  PINHD-1X1                                1X01                                     PIN HEADER                                                                    
+J14  BAT                                  PINHD-1X1                                1X01                                     PIN HEADER                                                                    
+J15  3V                                   PINHD-1X1                                1X01                                     PIN HEADER                                                                    
+J16  5V                                   PINHD-1X1                                1X01                                     PIN HEADER                                                                    
+J17  5V                                   PINHD-1X1                                1X01                                     PIN HEADER                                                                    
+J18  5V                                   PINHD-1X1                                1X01                                     PIN HEADER                                                                    
+J19  GND                                  PINHD-1X1                                1X01                                     PIN HEADER                                                                    
+J20  USB_DUAL_67298-3090                  USB_DUAL_67298-3090                      USB_DUAL_MOLEX_67298-3090                                                                                              
+J21  BATTER_PAD_SOLDER_3X4MM              BATTER_PAD_SOLDER_3X4MM                  BATTERY_PAD_SOLDER                                                                                                     
+J22  BATTER_PAD_SOLDER_3X4MM              BATTER_PAD_SOLDER_3X4MM                  BATTERY_PAD_SOLDER                                                                                                     
+L1   2.2uH                                INDUCTOR_IHLP3232DZER2R2M01_2.2UH_VISHAY INDUCTOR_IHLP3232DZER2R2M01_VISHAY_2.2UH                                                                               
+L2   1.0uH                                INDUCTOR_IHLP3232CZER1R0M01_1.0UH_VISHAY INDUCTOR_IHLP3232CZER1R0M01_1.0UH_VISHAY                                                                               
+Q1   MOSFET_P-CHANNEL_LOGIC_FDV304P       MOSFET_P-CHANNEL_LOGIC_FDV304P           MOSFET_P-CHANNEL_LOGIC_FDV304P                                                                                         
+Q2                                        TRANSISTOR_NPN_MMBT3904                  TRANSISTOR_NPN_MMBT3904                                                                                                
+R1   4.7K                                 R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+R2   4.7K                                 R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+R3   130R                                 R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+R5   10K                                  R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+R6   10K                                  R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+R7   30.1K                                R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+R8   5.23K                                R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+R9   1K                                   R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+R10  220R                                 R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+R11  1M                                   R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+R12  10K                                  R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+R13  34K                                  R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+R14  56K                                  R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+R15  174K                                 R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+R16  560K                                 R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+R17  1M                                   R-EU_R0603                               R0603                                    RESISTOR, European symbol                                                     
+S1   SWITCH_SP3T_PCM13SMTR                SWITCH_SP3T_PCM13SMTR                    SWITCH_SP3T_PCM13SMTR                                                                                                  
+S2   TACTILE_RIGHT_ANGLE_6X6_TH           TACTILE_RIGHT_ANGLE_6X6_TH               TACTILE_RIGHT_ANGLE_6X6_TH                                                                                             
+TP2  TEST_POINT_LARGE                     TEST_POINT_LARGE                         TEST_POINT_LARGE                                                                                                       
+U1   ATMEGA328P-MU                        ATMEGA328P-MU                            QFN50P500X500X100-33N                    Programmable Flash         ATMEGA328P-MU 1748522    26R2526   QFN-32  Atmel   
+U2   BQ25895_LITHIUM_CHARGER_BOOSTER      BQ25895_LITHIUM_CHARGER_BOOSTER          BQ25895_PWQFN-N24                                                                                                      
+U3   WS2812B_RGB_LED                      WS2812B_RGB_LED                          WS2812B_RGB_LED                                                                                                        
+U6   TPS61235_SYNCH_BOOST_CONVERTER       TPS61235_SYNCH_BOOST_CONVERTER           TPS61235_SYNCH_BOOST_CONVERTER                                                                                         
+U7   MIC5501-3.0YM5-TR_3V_LDO             MIC5501-3.0YM5-TR_3V_LDO                 MIC5501-3.0YM5-TR_3V_LDO                                                                                               
+U8   LC709203F_1S_LI-ION_FUEL-GAUGE       LC709203F_1S_LI-ION_FUEL-GAUGE           LC709203F_1S_LI-ION_FUEL-GAUGE_DFN                                                                                     
+U9   SN74LVC1T45_LEVEL_SHIFTER            SN74LVC1T45_LEVEL_SHIFTER                SN74LVC1T45_LEVEL_SHIFTER                                                                                              
+U10  TPS2513_DUAL_USB_CHARGE_CONTROLLER   TPS2513_DUAL_USB_CHARGE_CONTROLLER       SOT23-6_TPS2513                                                                                                        
+Y1                                        RESONATOR_SMD_CSTCE12M0G52-R0            RESONATOR_SMD_CSTCE12M0G52-R0                                                                                          
